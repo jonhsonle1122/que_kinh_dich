@@ -1,0 +1,91 @@
+openapi: 3.0.0
+info:
+  title: API Documentation
+  version: 1.0.0
+paths:
+  /api/tra:
+    post:
+      summary: Tra cứu Quẻ Kép từ 6 hào và danh sách hào động (để tra Quẻ Biến)
+      tags:
+        - Quẻ Kép
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - haos
+              properties:
+                haos:
+                  type: array
+                  items:
+                    type: integer
+                    enum: [0, 1]
+                  minItems: 6
+                  maxItems: 6
+                  example: [1, 0, 1, 1, 0, 0]
+                hao_dong:
+                  type: array
+                  description: Danh sách vị trí hào động (1–6)
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 6
+                  example: [2, 5]
+      responses:
+        200:
+          description: Quẻ kép và quẻ biến nếu có
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queKep:
+                    $ref: "#/components/schemas/QueKep"
+                  queKepBien:
+                    $ref: "#/components/schemas/QueKep"
+        400:
+          description: Dữ liệu không hợp lệ (phải nhập đúng 6 hào)
+        404:
+          description: Không tìm thấy Quẻ Đơn hoặc Quẻ Kép tương ứng
+
+components:
+  schemas:
+    QueKep:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Mã định danh duy nhất cho Quẻ Kép
+        name:
+          type: string
+          description: Tên hoặc tiêu đề của Quẻ Kép
+        description:
+          type: string
+          description: Mô tả chi tiết về Quẻ Kép
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              line:
+                type: integer
+                description: Vị trí của hào trong Quẻ (từ 1 đến 6)
+              value:
+                type: integer
+                enum: [0, 1]
+                description: Giá trị của hào (0 hoặc 1)
+              is_dynamic:
+                type: boolean
+                description: Liệu hào có động hay không
+            required:
+              - line
+              - value
+              - is_dynamic
+          description: Mảng các hào trong Quẻ với giá trị và trạng thái động của từng hào
+      required:
+        - id
+        - name
+        - description
+        - details

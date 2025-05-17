@@ -1,0 +1,660 @@
+import DiaChi from "../models/DiaChi.js";
+import ElementPhaseMap from "../models/ElementPhaseMap.js";
+import LichSu from "../models/LichSu.js";
+import LucThu from "../models/LucThu.js";
+import NguHanh from "../models/NguHanh.js";
+import Que from "../models/Que.js"; // tương tự nếu dùng default export
+import QueDon from "../models/QueDon.js";
+import QueKep from "../models/QueKep.js";
+import ThienCan from "../models/ThienCan.js";
+import TruongSinhPhase from "../models/TruongSinhPhase.js";
+import TuanKhong from "../models/TuanKhong.js";
+import {
+  convertIsoToLunarInfo,
+  getNguHanhTrangThai,
+} from "../utils/datetime.js";
+export const traQueKep = async (req, res) => {
+  try {
+    const nguhanh = await NguHanh.find();
+    const { haos, hao_dong = [], ngaylapque } = req.body;
+
+    if (!Array.isArray(haos) || haos.length !== 6) {
+      return res.status(400).json({ message: "Phải nhập đúng 6 hào" });
+    }
+
+    const lunarInfo = convertIsoToLunarInfo(ngaylapque);
+
+    const mahatextNoi = haos.slice(0, 3).join("");
+    const mahatextNgoai = haos.slice(3).join("");
+
+    const queNgoai = await QueDon.findOne({ mahatext: mahatextNgoai });
+    const queNoi = await QueDon.findOne({ mahatext: mahatextNoi });
+    const [thiencanngay, diachingay] = lunarInfo.day.split(" ");
+    const [thiencanthang, diachithang] = lunarInfo.month.split(" ");
+    const nguhanhngay = await DiaChi.findOne({ ten: diachingay })
+      .select("-_id")
+      .populate({
+        path: "nguhanh",
+        select: "-_id ten",
+      });
+    const nguhanhthang = await DiaChi.findOne({ ten: diachithang })
+      .select("-_id")
+      .populate({
+        path: "nguhanh",
+        select: "-_id ten",
+      });
+    if (!queNgoai || !queNoi) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
+    }
+
+    const queKep = await QueKep.findOne({
+      queNoi: queNoi._id,
+      queNgoai: queNgoai._id,
+    }).populate({
+      path: "queNoi queNgoai thuoccung",
+      populate: [
+        { path: "thiencanquenoi thiencanquengoai", select: "ten" },
+        {
+          path: "diachiquenoi diachiquengoai",
+          select: "ten",
+          populate: [{ path: "nguhanh", select: "ten sinh khac" }],
+        },
+        { path: "nguhanh", select: "ten sinh khac" },
+      ],
+    });
+
+    if (!queKep) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
+    }
+
+    const ketQua = [];
+    const ketQuaBien = [];
+    let listvongtruongsinh = [];
+    let listvongtruongsinhbien = [];
+    let listvongtruongsinhthang = [];
+    let listvongtruongsinhthangbien = [];
+    let listtuthoi = [];
+    let listtuthoibien = [];
+    if (queKep.queNoi?.diachiquenoi) {
+      for (const diachi of queKep.queNoi.diachiquenoi) {
+        ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+        const result = await traVongTruongSinh(
+          nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
+          diachi.ten
+        );
+        const result1 = await traVongTruongSinh(
+          nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
+          diachi.ten
+        );
+        const result2 = await getNguHanhTrangThai(
+          `${diachi.ten}-${diachi.nguhanh.ten}`,
+          lunarInfo.solarDate
+        );
+        listvongtruongsinh.push(result);
+        listvongtruongsinhthang.push(result1);
+        listtuthoi.push(result2);
+      }
+    }
+
+    // Ngoại
+    if (queKep.queNgoai?.diachiquengoai) {
+      for (const diachi of queKep.queNgoai.diachiquengoai) {
+        ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+        const result = await traVongTruongSinh(
+          nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
+          diachi.ten
+        );
+        const result1 = await traVongTruongSinh(
+          nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
+          diachi.ten
+        );
+        const result2 = await getNguHanhTrangThai(
+          `${diachi.ten}-${diachi.nguhanh.ten}`,
+          lunarInfo.solarDate
+        );
+        listvongtruongsinh.push(result);
+        listvongtruongsinhthang.push(result1);
+        listtuthoi.push(result2);
+      }
+    }
+
+    const lucthu = await ThienCan.find({
+      ten: lunarInfo.day.split(" ")[0],
+    }).populate({
+      path: "lucThu",
+      select: "-_id ten",
+    });
+    // const result = await traVongTruongSinh("Mộc", "Mão");
+
+    // if (result) {
+    //   console.log(`Giai đoạn Trường Sinh: ${result}`);
+    // } else {
+    //   console.log("Không tìm thấy giai đoạn Trường Sinh.");
+    // }
+    const tuankhonginfo = await TuanKhong.findOne({
+      tuangiap: lunarInfo.day,
+    }).select("tuankhong");
+
+    let queKepBien = null;
+    let listdiachibien = [];
+    let listthiencanbien = [];
+
+    if (hao_dong.length > 0) {
+      const haosBien = [...haos];
+      hao_dong.forEach((i) => {
+        if (i >= 1 && i <= 6) {
+          haosBien[i - 1] = haosBien[i - 1] === 1 ? 0 : 1;
+        }
+      });
+
+      const mahatextNoiBien = haosBien.slice(0, 3).join("");
+      const mahatextNgoaiBien = haosBien.slice(3).join("");
+
+      const queNgoaiBien = await QueDon.findOne({
+        mahatext: mahatextNgoaiBien,
+      });
+      const queNoiBien = await QueDon.findOne({ mahatext: mahatextNoiBien });
+
+      if (queNgoaiBien && queNoiBien) {
+        queKepBien = await QueKep.findOne({
+          queNoi: queNoiBien._id,
+          queNgoai: queNgoaiBien._id,
+        }).populate({
+          path: "queNoi queNgoai thuoccung",
+          populate: [
+            { path: "thiencanquenoi thiencanquengoai", select: "ten" },
+            {
+              path: "diachiquenoi diachiquengoai",
+              select: "ten",
+              populate: [{ path: "nguhanh", select: "ten sinh khac" }],
+            },
+            { path: "nguhanh", select: "ten sinh khac" },
+          ],
+        });
+
+        if (queKepBien) {
+          // Xử lý queKepBien.queNoi
+          if (queKepBien.queNoi?.diachiquenoi) {
+            for (const diachi of queKepBien.queNoi.diachiquenoi) {
+              ketQuaBien.push(
+                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
+              );
+              const result = await traVongTruongSinh(
+                nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
+                diachi.ten
+              );
+              const result1 = await traVongTruongSinh(
+                nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
+                diachi.ten
+              );
+              const result2 = await getNguHanhTrangThai(
+                `${diachi.ten}-${diachi.nguhanh.ten}`,
+                lunarInfo.solarDate
+              );
+              listvongtruongsinhbien.push(result);
+              listvongtruongsinhthangbien.push(result1);
+              listtuthoibien.push(result2);
+            }
+          }
+
+          // Xử lý queKepBien.queNgoai
+          if (queKepBien.queNgoai?.diachiquengoai) {
+            for (const diachi of queKepBien.queNgoai.diachiquengoai) {
+              ketQuaBien.push(
+                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
+              );
+              const result = await traVongTruongSinh(
+                nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
+                diachi.ten
+              );
+              const result1 = await traVongTruongSinh(
+                nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
+                diachi.ten
+              );
+              const result2 = await getNguHanhTrangThai(
+                `${diachi.ten}-${diachi.nguhanh.ten}`,
+                lunarInfo.solarDate
+              );
+              listvongtruongsinhbien.push(result);
+              listvongtruongsinhthangbien.push(result1);
+              listtuthoibien.push(result2);
+            }
+          }
+
+          listdiachibien = [
+            ...queKepBien.queNoi.diachiquenoi.map((item) => item.ten),
+            ...queKepBien.queNgoai.diachiquengoai.map((item) => item.ten),
+          ];
+          listthiencanbien = [
+            ...queKepBien.queNoi.diachiquenoi.map(
+              (item) => `${queKepBien.queNoi.thiencanquenoi.ten} ${item.ten}`
+            ),
+            ...queKepBien.queNgoai.diachiquengoai.map(
+              (item) =>
+                `${queKepBien.queNgoai.thiencanquengoai.ten} ${item.ten}`
+            ),
+          ];
+        }
+      }
+    }
+
+    const listdiachi = [
+      ...queKep.queNoi.diachiquenoi.map((item) => item.ten),
+      ...queKep.queNgoai.diachiquengoai.map((item) => item.ten),
+    ];
+    const listthiencan = [
+      ...queKep.queNoi.diachiquenoi.map(
+        (item) => `${queKep.queNoi.thiencanquenoi.ten} ${item.ten}`
+      ),
+      ...queKep.queNgoai.diachiquengoai.map(
+        (item) => `${queKep.queNgoai.thiencanquengoai.ten} ${item.ten}`
+      ),
+    ];
+
+    res.status(200).json({
+      que_chinh: {
+        ten_que: queKep.tenque,
+        ma_que: queKep.mahatext,
+        dien_giai: queKep.dien_giai,
+        luc_than: ketQua,
+        can_chi: listdiachi,
+        thiencan: listthiencan,
+        vong_truong_sinh: listvongtruongsinh,
+        vong_truong_sinh_thang: listvongtruongsinhthang,
+        tu_thoi: listtuthoi.map((item) => item.trangThai),
+        hao_the_ung: [
+          listdiachi[queKep.hao_the - 1],
+          listdiachi[queKep.hao_the - 1],
+        ],
+      },
+      que_bien: queKepBien
+        ? {
+            ten_que: queKepBien.tenque,
+            ma_que: queKepBien.mahatext,
+            dien_giai: queKepBien.dien_giai,
+            luc_than: ketQuaBien,
+            can_chi: listdiachibien,
+            thiencan: listthiencanbien,
+            vong_truong_sinh_ngay: listvongtruongsinhbien,
+            vong_truong_sinh_thang: listvongtruongsinhthangbien,
+            tu_thoi: listtuthoibien.map((item) => item.trangThai),
+          }
+        : null,
+      ngay_lap_que: {
+        ngay: lunarInfo.day,
+        thang: lunarInfo.month,
+        nam: lunarInfo.year,
+        gio: lunarInfo.hour.canChi,
+        tietKhi: lunarInfo.tietKhi,
+        nguyetLenh: lunarInfo.nguyetLenh,
+        nhatThan: lunarInfo.nhatThan,
+      },
+      luc_thu: lucthu?.[0]?.lucThu?.map((item) => item.ten) || [],
+      tuan_khong: tuankhonginfo?.tuankhong || null,
+      the_ung: getElementsWithStep(
+        listdiachi.map((item) => item) || [],
+        queKep.hao_the - 1
+      ),
+      quai_than: getQuaiThan(queKep.hao_the - 1, haos),
+    });
+  } catch (error) {
+    console.error("Lỗi tra quẻ kép:", error);
+    res
+      .status(500)
+      .json({ message: "Lỗi khi tra quẻ kép", error: error.message });
+  }
+};
+
+async function traVongTruongSinhTheoTamHop(diachi) {
+  const tamHopCucMap = [
+    { hanh: "Mộc", chi: ["Hợi", "Mão", "Mùi"] },
+    { hanh: "Kim", chi: ["Tỵ", "Dậu", "Sửu"] },
+    { hanh: "Thủy", chi: ["Thân", "Tý", "Thìn"] },
+    { hanh: "Hỏa", chi: ["Dần", "Ngọ", "Tuất"] },
+  ];
+
+  const allChi = [
+    "Tý",
+    "Sửu",
+    "Dần",
+    "Mão",
+    "Thìn",
+    "Tỵ",
+    "Ngọ",
+    "Mùi",
+    "Thân",
+    "Dậu",
+    "Tuất",
+    "Hợi",
+  ];
+
+  // 1. Tìm hành cục của địa chi
+  const tamHop = tamHopCucMap.find((cuc) => cuc.chi.includes(diachi));
+
+  if (!tamHop) {
+    console.log(`❌ Không tìm thấy Tam Hợp Cục cho địa chi ${diachi}`);
+    return null;
+  }
+
+  const hanh = tamHop.hanh;
+
+  // 2. Tra chi bắt đầu vòng Trường Sinh theo hành cục
+  const mapping = await ElementPhaseMap.findOne({ hanh });
+  if (!mapping) {
+    console.log(`❌ Không tìm thấy vòng Trường Sinh cho hành ${hanh}`);
+    return null;
+  }
+
+  const startChi = mapping.truongSinhChi;
+
+  // 3. Tính thứ tự
+  const startIndex = allChi.indexOf(startChi);
+  const chiIndex = allChi.indexOf(diachi);
+
+  if (startIndex === -1 || chiIndex === -1) {
+    console.log("❌ Địa chi không hợp lệ.");
+    return null;
+  }
+
+  const phaseIndex = (chiIndex - startIndex + 12) % 12;
+
+  const phase = await TruongSinhPhase.findOne({ order: phaseIndex + 1 });
+
+  if (!phase) {
+    console.log("❌ Không tìm thấy giai đoạn Trường Sinh.");
+    return null;
+  }
+
+  return phase.name;
+}
+
+async function traVongTruongSinh(nguhanh, diachi) {
+  const allChi = [
+    "Tý",
+    "Sửu",
+    "Dần",
+    "Mão",
+    "Thìn",
+    "Tỵ",
+    "Ngọ",
+    "Mùi",
+    "Thân",
+    "Dậu",
+    "Tuất",
+    "Hợi",
+  ];
+
+  const mapping = await ElementPhaseMap.findOne({ hanh: nguhanh });
+  if (!mapping) return null;
+
+  const startChi = mapping.truongSinhChi;
+
+  const startIndex = allChi.indexOf(startChi);
+  const chiIndex = allChi.indexOf(diachi);
+
+  if (startIndex === -1 || chiIndex === -1) return null;
+
+  const phaseIndex = (chiIndex - startIndex + 12) % 12;
+
+  const phase = await TruongSinhPhase.findOne({ order: phaseIndex + 1 });
+  if (!phase) return null;
+
+  return phase.name; // ✅ Trả về tên giai đoạn
+}
+
+function getQuaiThan(vitrithe, listQue) {
+  const checkamduong = listQue[vitrithe - 1];
+  const listQuaiThan =
+    checkamduong == 0
+      ? ["Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"]
+      : ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ"];
+  if (vitrithe < 0 || vitrithe >= listQuaiThan) {
+    throw new Error("Vị trí bắt đầu không hợp lệ");
+  }
+
+  return listQuaiThan[vitrithe - 1];
+}
+function getElementsWithStep(list, start) {
+  const n = list.length;
+  if (start < 0 || start >= n) {
+    throw new Error("Vị trí bắt đầu không hợp lệ");
+  }
+  const first = list[start];
+  const secondIndex = (start - 3 + n) % n;
+  const second = list[secondIndex];
+  return [first, second];
+}
+function soSanhNguHanh(nguhanhquetong, nguhanhdiachi) {
+  const tennguhanhquetong = nguhanhquetong.ten;
+  const tennguhanhdiachi = nguhanhdiachi.ten;
+
+  var ketQua = "";
+
+  if (nguhanhdiachi.sinh.includes(tennguhanhquetong)) {
+    ketQua = "Phụ mẫu";
+  }
+  if (nguhanhquetong.sinh.includes(tennguhanhdiachi)) {
+    ketQua = "Tử tôn";
+  }
+
+  if (nguhanhdiachi.khac.includes(tennguhanhquetong)) {
+    ketQua = "Quan quỷ";
+  }
+  if (nguhanhquetong.khac.includes(tennguhanhdiachi)) {
+    ketQua = "Thê tài";
+  }
+
+  if (tennguhanhdiachi === tennguhanhquetong) {
+    ketQua = "Huynh đệ";
+  }
+
+  return ketQua;
+}
+
+// Lấy danh sách Quẻ Đơn
+export const getQueDon = async (req, res) => {
+  try {
+    const list = await QueDon.find().select("tenque mahatext");
+    res.status(200).json(list);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách quẻ đơn", error });
+  }
+};
+
+// Lấy danh sách Quẻ Kép
+export const getQueKep = async (req, res) => {
+  try {
+    const list = await QueKep.find().populate({
+      path: "queNoi queNgoai",
+      populate: [
+        { path: "thiencanquenoi thiencanquengoai", select: "ten" },
+        { path: "diachiquenoi diachiquengoai", select: "ten" },
+        { path: "nguhanh", select: "ten sinh khac" },
+      ],
+    });
+    res.status(200).json(list);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách quẻ kép", error });
+  }
+};
+
+// Thêm Quẻ Kép
+export const createQueKep = async (req, res) => {
+  try {
+    const {
+      queNoi,
+      queNgoai,
+      tenque,
+      mahatext,
+      dien_giai,
+      thuoccung,
+      hao_the,
+    } = req.body;
+    const newQueKep = new QueKep({
+      queNoi,
+      queNgoai,
+      tenque,
+      mahatext,
+      dien_giai,
+      thuoccung,
+      hao_the,
+    });
+
+    const savedQueKep = await newQueKep.save();
+    res.status(201).json(savedQueKep);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi thêm quẻ kép", error });
+  }
+};
+export const updateQueKep = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Danh sách các trường được phép cập nhật
+    const allowedFields = [
+      "queDon1",
+      "queDon2",
+      "tenque",
+      "mahatext",
+      "dien_giai",
+      "thuoccung",
+      "hao_the",
+    ];
+
+    // Tạo object chỉ chứa những trường đã được truyền lên
+    const updateData = {};
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
+
+    const updatedQueKep = await QueKep.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    if (!updatedQueKep) {
+      return res.status(404).json({ message: "Quẻ Kép không tồn tại" });
+    }
+
+    res.status(200).json(updatedQueKep);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi cập nhật quẻ kép", error });
+  }
+};
+
+export const getThienCan = async (req, res) => {
+  try {
+    const listLucThu = await LucThu.find();
+    const list = await ThienCan.find().populate({
+      path: "lucThu",
+      select: "-_id ten",
+    });
+    res.status(200).json({ list, listLucThu });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách thiên can", error });
+  }
+};
+
+export const getDiaChi = async (req, res) => {
+  try {
+    const list = await DiaChi.find();
+    res.status(200).json(list);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách địa chi", error });
+  }
+};
+export async function updateQueDon(req, res) {
+  try {
+    const { thiencanquenoi, thiencanquengoai, diachiquenoi, diachiquengoai } =
+      req.body;
+
+    // Kiểm tra đầu vào (có thể thêm kiểm tra kỹ hơn)
+    if (
+      !thiencanquenoi ||
+      !thiencanquengoai ||
+      !Array.isArray(diachiquenoi) ||
+      !Array.isArray(diachiquengoai)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Thiếu hoặc sai định dạng dữ liệu." });
+    }
+
+    // Cập nhật quẻ đơn
+    const updated = await QueDon.findByIdAndUpdate(
+      req.params.id,
+      {
+        thiencanquenoi,
+        thiencanquengoai,
+        diachiquenoi,
+        diachiquengoai,
+      },
+      { new: true }
+    ).populate("thiencanquenoi thiencanquengoai diachiquenoi diachiquengoai");
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy quẻ đơn." });
+    }
+
+    res.json({ message: "✅ Đã cập nhật quẻ đơn", que: updated });
+  } catch (err) {
+    console.error("❌ Error:", err);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+}
+export async function traQue(req, res) {
+  try {
+    const { hao } = req.body;
+
+    if (!Array.isArray(hao) || hao.length !== 6) {
+      return res.status(400).json({ error: "Phải nhập đúng 6 hào" });
+    }
+
+    const goc = hao.map((h) => h.am_duong);
+    const ma_que = goc.join("");
+    const queGoc = await Que.findOne({ ma_hexagram: ma_que });
+
+    let bien = [...goc];
+    let hasDong = false;
+
+    hao.forEach((h, i) => {
+      if (h.dong) {
+        bien[i] = 1 - bien[i];
+        hasDong = true;
+      }
+    });
+
+    const ma_que_bien = hasDong ? bien.join("") : null;
+    const queBien = hasDong
+      ? await Que.findOne({ ma_hexagram: ma_que_bien })
+      : null;
+
+    await LichSu.create({ hao, ma_que, ma_que_bien });
+
+    res.json({
+      ma_que,
+      ten_que: queGoc ? queGoc.ten_que : "Không tìm thấy",
+      ma_que_bien: ma_que_bien,
+      ten_que_bien: queBien ? queBien.ten_que : "Không tìm thấy",
+    });
+  } catch (error) {
+    console.error("❌ Lỗi xử lý traQue:", error);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+}
+
+export async function lichSu(req, res) {
+  try {
+    const lichSuList = await LichSu.find().sort({ createdAt: -1 }).limit(20);
+    res.json(lichSuList);
+  } catch (error) {
+    console.error("❌ Lỗi lấy lịch sử:", error);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+}
