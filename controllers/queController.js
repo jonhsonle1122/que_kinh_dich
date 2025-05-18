@@ -36,7 +36,6 @@ export const traQueKep = async (req, res) => {
     // Tìm quẻ đơn trong DB theo mã hào
     const queNgoai = await QueDon.findOne({ mahatext: mahatextNgoai });
     const queNoi = await QueDon.findOne({ mahatext: mahatextNoi });
-
     // Lấy thông tin thiên can, địa chi ngày và tháng
     const [thiencanngay, diachingay] = lunarInfo.day.split(" ");
     const [thiencanthang, diachithang] = lunarInfo.month.split(" ");
@@ -59,7 +58,9 @@ export const traQueKep = async (req, res) => {
 
     // Nếu không tìm thấy quẻ đơn thì trả về lỗi
     if (!queNgoai || !queNoi) {
-      return res.status(404).json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
     }
 
     // Tìm quẻ kép theo quẻ nội và quẻ ngoại
@@ -80,7 +81,9 @@ export const traQueKep = async (req, res) => {
     });
 
     if (!queKep) {
-      return res.status(404).json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
     }
 
     // Khởi tạo các biến lưu kết quả
@@ -98,8 +101,14 @@ export const traQueKep = async (req, res) => {
       for (const diachi of queKep.queNoi.diachiquenoi) {
         ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
 
-        const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
-        const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
+        const result = await traTrangThaiTruongSinh(
+          diachi.nguhanh.ten,
+          diachingay
+        );
+        const result1 = await traTrangThaiTruongSinh(
+          diachi.nguhanh.ten,
+          diachithang
+        );
         const result2 = await getNguHanhTrangThai(
           `${diachi.ten}-${diachi.nguhanh.ten}`,
           lunarInfo.solarDate
@@ -116,8 +125,14 @@ export const traQueKep = async (req, res) => {
       for (const diachi of queKep.queNgoai.diachiquengoai) {
         ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
 
-        const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
-        const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
+        const result = await traTrangThaiTruongSinh(
+          diachi.nguhanh.ten,
+          diachingay
+        );
+        const result1 = await traTrangThaiTruongSinh(
+          diachi.nguhanh.ten,
+          diachithang
+        );
         const result2 = await getNguHanhTrangThai(
           `${diachi.ten}-${diachi.nguhanh.ten}`,
           lunarInfo.solarDate
@@ -158,7 +173,10 @@ export const traQueKep = async (req, res) => {
       const mahatextNoiBien = haosBien.slice(0, 3).join("");
       const mahatextNgoaiBien = haosBien.slice(3).join("");
 
-      const queNgoaiBien = await QueDon.findOne({ mahatext: mahatextNgoaiBien });
+      const queNgoaiBien = await QueDon.findOne({
+        mahatext: mahatextNgoaiBien,
+      });
+
       const queNoiBien = await QueDon.findOne({ mahatext: mahatextNoiBien });
 
       if (queNgoaiBien && queNoiBien) {
@@ -182,10 +200,18 @@ export const traQueKep = async (req, res) => {
           // Xử lý quẻ nội biến
           if (queKepBien.queNoi?.diachiquenoi) {
             for (const diachi of queKepBien.queNoi.diachiquenoi) {
-              ketQuaBien.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+              ketQuaBien.push(
+                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
+              );
 
-              const result = await traTrangThaiTruongSinh(diachi.ten, diachingay);
-              const result1 = await traTrangThaiTruongSinh(diachi.ten, diachithang);
+              const result = await traTrangThaiTruongSinh(
+                diachi.nguhanh.ten,
+                diachingay
+              );
+              const result1 = await traTrangThaiTruongSinh(
+                diachi.nguhanh.ten,
+                diachithang
+              );
               const result2 = await getNguHanhTrangThai(
                 `${diachi.ten}-${diachi.nguhanh.ten}`,
                 lunarInfo.solarDate
@@ -200,10 +226,18 @@ export const traQueKep = async (req, res) => {
           // Xử lý quẻ ngoại biến
           if (queKepBien.queNgoai?.diachiquengoai) {
             for (const diachi of queKepBien.queNgoai.diachiquengoai) {
-              ketQuaBien.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+              ketQuaBien.push(
+                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
+              );
 
-              const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
-              const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
+              const result = await traTrangThaiTruongSinh(
+                diachi.nguhanh.ten,
+                diachingay
+              );
+              const result1 = await traTrangThaiTruongSinh(
+                diachi.nguhanh.ten,
+                diachithang
+              );
               const result2 = await getNguHanhTrangThai(
                 `${diachi.ten}-${diachi.nguhanh.ten}`,
                 lunarInfo.solarDate
@@ -219,19 +253,168 @@ export const traQueKep = async (req, res) => {
     }
 
     // Trả về kết quả
+    // return res.status(200).json({
+    //   queKep,
+    //   queKepBien,
+    //   listvongtruongsinh,
+    //   listvongtruongsinhbien,
+    //   listvongtruongsinhthang,
+    //   listvongtruongsinhthangbien,
+    //   lucthu,
+    //   listtuthoi,
+    //   listtuthoibien,
+    //   tuankhonginfo,
+    //   ketQua,
+    //   ketQuaBien,
+    // });
+    console.log(ketQua, queKep.hao_the);
+    const listphucthan = await timphucthan(ketQua, queKep.thuoccung);
+    const listtheung = timtheung(ketQua, queKep.hao_the);
+    const listquaithan = getQuaiThan(queKep.hao_the, haos);
+
     return res.status(200).json({
-      queKep,
-      queKepBien,
-      listvongtruongsinh,
-      listvongtruongsinhbien,
-      listvongtruongsinhthang,
-      listvongtruongsinhthangbien,
-      lucthu,
-      listtuthoi,
-      listtuthoibien,
-      tuankhonginfo,
-      ketQua,
-      ketQuaBien,
+      message: "success",
+      data: {
+        queKep: {
+          ten: queKep?.tenque ?? null,
+          mahatext: queKep?.mahatext ?? null,
+          queNoi: {
+            thiencanquenoi:
+              queKep?.queNoi?.diachiquenoi?.map(
+                (item) =>
+                  `${queKep?.queNoi?.thiencanquenoi?.ten ?? ""} ${
+                    item?.ten ?? ""
+                  }`
+              ) ?? [],
+            diachiquenoi:
+              queKep?.queNoi?.diachiquenoi?.map(
+                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+              ) ?? [],
+            lucthan: ketQua?.slice(0, 3) ?? [],
+            tuthoi:
+              listtuthoi?.slice(0, 3)?.map((item) => item?.trangThai ?? null) ??
+              [],
+            truongsinh:
+              listvongtruongsinh
+                ?.slice(0, 3)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinhthang:
+              listvongtruongsinhthang
+                ?.slice(0, 3)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            lucthu:
+              lucthu?.[0]?.lucThu
+                ?.slice(0, 3)
+                ?.map((item) => item?.ten ?? null) ?? [],
+          },
+          queNgoai: {
+            thiencanquengoai:
+              queKep?.queNgoai?.diachiquengoai?.map(
+                (item) =>
+                  `${queKep?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
+                    item?.ten ?? ""
+                  }`
+              ) ?? [],
+            diachiquengoai:
+              queKep?.queNgoai?.diachiquengoai?.map(
+                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+              ) ?? [],
+            lucthan: ketQua?.slice(3, 6) ?? [],
+            tuthoi:
+              listtuthoi?.slice(3, 6)?.map((item) => item?.trangThai ?? null) ??
+              [],
+            truongsinh:
+              listvongtruongsinh
+                ?.slice(3, 6)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinhthang:
+              listvongtruongsinhthang
+                ?.slice(3, 6)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            lucthu:
+              lucthu?.[0]?.lucThu
+                ?.slice(3, 6)
+                ?.map((item) => item?.ten ?? null) ?? [],
+          },
+          thuoccung: queKep?.thuoccung?.ten ?? null,
+          hao_the: queKep?.hao_the ?? null,
+          dien_giai: queKep?.dien_giai ?? null,
+          dac_diem_que: queKep?.dac_diem_que ?? null,
+          ten_bieu_tuong: queKep?.ten_bieu_tuong ?? null,
+          phucthan: listphucthan ?? [],
+          theung: listtheung ?? [],
+          quaithan: listquaithan ?? [],
+        },
+        queBien: {
+          ten: queKepBien?.tenque ?? null,
+          mahatext: queKepBien?.mahatext ?? null,
+          queNoi: {
+            thiencanquenoi:
+              queKepBien?.queNoi?.diachiquenoi?.map(
+                (item) =>
+                  `${queKepBien?.queNoi?.thiencanquenoi?.ten ?? ""} ${
+                    item?.ten ?? ""
+                  }`
+              ) ?? [],
+            diachiquenoi:
+              queKepBien?.queNoi?.diachiquenoi?.map(
+                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+              ) ?? [],
+            lucthan: ketQuaBien?.slice(0, 3) ?? [],
+            tuthoi:
+              listtuthoibien
+                ?.slice(0, 3)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinh:
+              listvongtruongsinhbien
+                ?.slice(0, 3)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinhthang:
+              listvongtruongsinhthangbien
+                ?.slice(0, 3)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            lucthu:
+              lucthu?.[0]?.lucThu
+                ?.slice(0, 3)
+                ?.map((item) => item?.ten ?? null) ?? [],
+          },
+          queNgoai: {
+            thiencanquengoai:
+              queKepBien?.queNgoai?.diachiquengoai?.map(
+                (item) =>
+                  `${queKepBien?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
+                    item?.ten ?? ""
+                  }`
+              ) ?? [],
+            diachiquengoai:
+              queKepBien?.queNgoai?.diachiquengoai?.map(
+                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+              ) ?? [],
+            lucthan: ketQuaBien?.slice(3, 6) ?? [],
+            tuthoi:
+              listtuthoibien
+                ?.slice(3, 6)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinh:
+              listvongtruongsinhbien
+                ?.slice(3, 6)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            truongsinhthang:
+              listvongtruongsinhthangbien
+                ?.slice(3, 6)
+                ?.map((item) => item?.trangThai ?? null) ?? [],
+            lucthu:
+              lucthu?.[0]?.lucThu
+                ?.slice(3, 6)
+                ?.map((item) => item?.ten ?? null) ?? [],
+          },
+          dien_giai: queKepBien?.dien_giai ?? null,
+          dac_diem_que: queKepBien?.dac_diem_que ?? null,
+          ten_bieu_tuong: queKepBien?.ten_bieu_tuong ?? null,
+        },
+        tuankhong: tuankhonginfo?.tuankhong ?? null,
+        ngaylapque: lunarInfo ?? null,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -240,16 +423,12 @@ export const traQueKep = async (req, res) => {
 };
 
 async function timphucthan(listlucthan, quethuan) {
-  const lucthantong = [
-    "Huynh đệ",
-    "Quan quỷ",
-    "Thê tài",
-    "Phụ mẫu",
-    "Tử tôn"
-  ];
+  const lucthantong = ["Huynh đệ", "Quan quỷ", "Thê tài", "Phụ mẫu", "Tử tôn"];
 
   // 1. Xác định các Lục Thân bị thiếu trong quẻ chính
-  const lucthanthieu = lucthantong.filter(than => !listlucthan.includes(than));
+  const lucthanthieu = lucthantong.filter(
+    (than) => !listlucthan.includes(than)
+  );
 
   // 2. Tìm các Lục Thân bị thiếu trong quẻ thuần và lấy cả vị trí + địa chi
   let phucThanList = [];
@@ -262,8 +441,7 @@ async function timphucthan(listlucthan, quethuan) {
         phucThanList.push({
           lucthan: lt,
           viTri: `Hào Nội ${i + 1}`,
-          diaChi:  `${diachi.ten}-${diachi.nguhanh.ten}`
-
+          diaChi: `${diachi.ten}-${diachi.nguhanh.ten}`,
         });
       }
     }
@@ -277,15 +455,14 @@ async function timphucthan(listlucthan, quethuan) {
         phucThanList.push({
           lucthan: lt,
           viTri: `Hào Ngoại ${i + 1}`,
-          diaChi:  `${diachi.ten}-${diachi.nguhanh.ten}`
-          });
-        }
+          diaChi: `${diachi.ten}-${diachi.nguhanh.ten}`,
+        });
+      }
     }
   }
 
   return phucThanList;
 }
-
 
 async function traVongTruongSinhTheoTamHop(diachi) {
   const tamHopCucMap = [
@@ -351,8 +528,18 @@ async function traVongTruongSinhTheoTamHop(diachi) {
 }
 async function traTrangThaiTruongSinh(nguhanh, diaChi) {
   const allChi = [
-    "Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ",
-    "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi",
+    "Tý",
+    "Sửu",
+    "Dần",
+    "Mão",
+    "Thìn",
+    "Tỵ",
+    "Ngọ",
+    "Mùi",
+    "Thân",
+    "Dậu",
+    "Tuất",
+    "Hợi",
   ];
 
   // Bước 1: Lấy vòng Trường Sinh theo ngũ hành truyền vào
@@ -390,7 +577,6 @@ async function traTrangThaiTruongSinh(nguhanh, diaChi) {
     trangThai: phase.name,
   };
 }
-
 
 async function traVongTruongSinh(nguhanh, diachi) {
   const allChi = [
@@ -438,14 +624,14 @@ function getQuaiThan(vitrithe, listQue) {
 
   return listQuaiThan[vitrithe - 1];
 }
-function getElementsWithStep(list, start) {
-  const n = list.length;
-  if (start < 0 || start >= n) {
+function timtheung(que, vitrihaothe) {
+  const n = que.length;
+  if (vitrihaothe < 0 || vitrihaothe >= n) {
     throw new Error("Vị trí bắt đầu không hợp lệ");
   }
-  const first = list[start];
-  const secondIndex = (start - 3 + n) % n;
-  const second = list[secondIndex];
+  const first = que[vitrihaothe - 1];
+  const secondIndex = (vitrihaothe - 3 + n) % n;
+  const second = que[secondIndex - 1];
   return [first, second];
 }
 function soSanhNguHanh(nguhanhquetong, nguhanhdiachi) {
