@@ -6,6 +6,8 @@ const QueKepSchema = new Schema({
   tenque: { type: String, required: true },
   mahatext: { type: String, required: true, unique: true },
   dien_giai: { type: String, required: true },
+  dac_diem_que: { type: String, required: true },
+  ten_bieu_tuong: { type: String, required: true },
   queNoi: { type: Schema.Types.ObjectId, ref: "QueDon" },
   queNgoai: { type: Schema.Types.ObjectId, ref: "QueDon" },
   thuoccung: { type: Schema.Types.ObjectId, ref: "QueDon" },

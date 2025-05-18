@@ -15,40 +15,54 @@ import {
 } from "../utils/datetime.js";
 export const traQueKep = async (req, res) => {
   try {
+    // Lấy dữ liệu ngũ hành
     const nguhanh = await NguHanh.find();
+
+    // Lấy dữ liệu từ body request
     const { haos, hao_dong = [], ngaylapque } = req.body;
 
+    // Kiểm tra số lượng hào có đúng 6 hay không
     if (!Array.isArray(haos) || haos.length !== 6) {
       return res.status(400).json({ message: "Phải nhập đúng 6 hào" });
     }
 
+    // Chuyển ngày dương sang thông tin âm lịch
     const lunarInfo = convertIsoToLunarInfo(ngaylapque);
 
+    // Tách 6 hào thành 2 quẻ đơn: 3 hào trong và 3 hào ngoài
     const mahatextNoi = haos.slice(0, 3).join("");
     const mahatextNgoai = haos.slice(3).join("");
 
+    // Tìm quẻ đơn trong DB theo mã hào
     const queNgoai = await QueDon.findOne({ mahatext: mahatextNgoai });
     const queNoi = await QueDon.findOne({ mahatext: mahatextNoi });
+
+    // Lấy thông tin thiên can, địa chi ngày và tháng
     const [thiencanngay, diachingay] = lunarInfo.day.split(" ");
     const [thiencanthang, diachithang] = lunarInfo.month.split(" ");
+
+    // Tìm ngũ hành của địa chi ngày
     const nguhanhngay = await DiaChi.findOne({ ten: diachingay })
       .select("-_id")
       .populate({
         path: "nguhanh",
         select: "-_id ten",
       });
+
+    // Tìm ngũ hành của địa chi tháng
     const nguhanhthang = await DiaChi.findOne({ ten: diachithang })
       .select("-_id")
       .populate({
         path: "nguhanh",
         select: "-_id ten",
       });
+
+    // Nếu không tìm thấy quẻ đơn thì trả về lỗi
     if (!queNgoai || !queNoi) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
+      return res.status(404).json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
     }
 
+    // Tìm quẻ kép theo quẻ nội và quẻ ngoại
     const queKep = await QueKep.findOne({
       queNoi: queNoi._id,
       queNgoai: queNgoai._id,
@@ -66,11 +80,10 @@ export const traQueKep = async (req, res) => {
     });
 
     if (!queKep) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
+      return res.status(404).json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
     }
 
+    // Khởi tạo các biến lưu kết quả
     const ketQua = [];
     const ketQuaBien = [];
     let listvongtruongsinh = [];
@@ -79,66 +92,57 @@ export const traQueKep = async (req, res) => {
     let listvongtruongsinhthangbien = [];
     let listtuthoi = [];
     let listtuthoibien = [];
+
+    // Xử lý quẻ nội
     if (queKep.queNoi?.diachiquenoi) {
       for (const diachi of queKep.queNoi.diachiquenoi) {
         ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
-        const result = await traVongTruongSinh(
-          nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
-          diachi.ten
-        );
-        const result1 = await traVongTruongSinh(
-          nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
-          diachi.ten
-        );
+
+        const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
+        const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
         const result2 = await getNguHanhTrangThai(
           `${diachi.ten}-${diachi.nguhanh.ten}`,
           lunarInfo.solarDate
         );
+
         listvongtruongsinh.push(result);
         listvongtruongsinhthang.push(result1);
         listtuthoi.push(result2);
       }
     }
 
-    // Ngoại
+    // Xử lý quẻ ngoại
     if (queKep.queNgoai?.diachiquengoai) {
       for (const diachi of queKep.queNgoai.diachiquengoai) {
         ketQua.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
-        const result = await traVongTruongSinh(
-          nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
-          diachi.ten
-        );
-        const result1 = await traVongTruongSinh(
-          nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
-          diachi.ten
-        );
+
+        const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
+        const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
         const result2 = await getNguHanhTrangThai(
           `${diachi.ten}-${diachi.nguhanh.ten}`,
           lunarInfo.solarDate
         );
+
         listvongtruongsinh.push(result);
         listvongtruongsinhthang.push(result1);
         listtuthoi.push(result2);
       }
     }
 
+    // Lục Thư của ngày
     const lucthu = await ThienCan.find({
       ten: lunarInfo.day.split(" ")[0],
     }).populate({
       path: "lucThu",
       select: "-_id ten",
     });
-    // const result = await traVongTruongSinh("Mộc", "Mão");
 
-    // if (result) {
-    //   console.log(`Giai đoạn Trường Sinh: ${result}`);
-    // } else {
-    //   console.log("Không tìm thấy giai đoạn Trường Sinh.");
-    // }
+    // Thông tin Tuần Không
     const tuankhonginfo = await TuanKhong.findOne({
       tuangiap: lunarInfo.day,
     }).select("tuankhong");
 
+    // Xử lý quẻ biến nếu có hào động
     let queKepBien = null;
     let listdiachibien = [];
     let listthiencanbien = [];
@@ -154,9 +158,7 @@ export const traQueKep = async (req, res) => {
       const mahatextNoiBien = haosBien.slice(0, 3).join("");
       const mahatextNgoaiBien = haosBien.slice(3).join("");
 
-      const queNgoaiBien = await QueDon.findOne({
-        mahatext: mahatextNgoaiBien,
-      });
+      const queNgoaiBien = await QueDon.findOne({ mahatext: mahatextNgoaiBien });
       const queNoiBien = await QueDon.findOne({ mahatext: mahatextNoiBien });
 
       if (queNgoaiBien && queNoiBien) {
@@ -177,137 +179,113 @@ export const traQueKep = async (req, res) => {
         });
 
         if (queKepBien) {
-          // Xử lý queKepBien.queNoi
+          // Xử lý quẻ nội biến
           if (queKepBien.queNoi?.diachiquenoi) {
             for (const diachi of queKepBien.queNoi.diachiquenoi) {
-              ketQuaBien.push(
-                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
-              );
-              const result = await traVongTruongSinh(
-                nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
-                diachi.ten
-              );
-              const result1 = await traVongTruongSinh(
-                nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
-                diachi.ten
-              );
+              ketQuaBien.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+
+              const result = await traTrangThaiTruongSinh(diachi.ten, diachingay);
+              const result1 = await traTrangThaiTruongSinh(diachi.ten, diachithang);
               const result2 = await getNguHanhTrangThai(
                 `${diachi.ten}-${diachi.nguhanh.ten}`,
                 lunarInfo.solarDate
               );
+
               listvongtruongsinhbien.push(result);
               listvongtruongsinhthangbien.push(result1);
               listtuthoibien.push(result2);
             }
           }
 
-          // Xử lý queKepBien.queNgoai
+          // Xử lý quẻ ngoại biến
           if (queKepBien.queNgoai?.diachiquengoai) {
             for (const diachi of queKepBien.queNgoai.diachiquengoai) {
-              ketQuaBien.push(
-                soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh)
-              );
-              const result = await traVongTruongSinh(
-                nguhanhngay.nguhanh.ten || diachi.nguhanh.ten,
-                diachi.ten
-              );
-              const result1 = await traVongTruongSinh(
-                nguhanhthang.nguhanh.ten || diachi.nguhanh.ten,
-                diachi.ten
-              );
+              ketQuaBien.push(soSanhNguHanh(queKep.thuoccung.nguhanh, diachi.nguhanh));
+
+              const result = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachingay);
+              const result1 = await traTrangThaiTruongSinh(diachi.nguhanh.ten, diachithang);
               const result2 = await getNguHanhTrangThai(
                 `${diachi.ten}-${diachi.nguhanh.ten}`,
                 lunarInfo.solarDate
               );
+
               listvongtruongsinhbien.push(result);
               listvongtruongsinhthangbien.push(result1);
               listtuthoibien.push(result2);
             }
           }
-
-          listdiachibien = [
-            ...queKepBien.queNoi.diachiquenoi.map((item) => item.ten),
-            ...queKepBien.queNgoai.diachiquengoai.map((item) => item.ten),
-          ];
-          listthiencanbien = [
-            ...queKepBien.queNoi.diachiquenoi.map(
-              (item) => `${queKepBien.queNoi.thiencanquenoi.ten} ${item.ten}`
-            ),
-            ...queKepBien.queNgoai.diachiquengoai.map(
-              (item) =>
-                `${queKepBien.queNgoai.thiencanquengoai.ten} ${item.ten}`
-            ),
-          ];
         }
       }
     }
 
-    const listdiachi = [
-      ...queKep.queNoi.diachiquenoi.map((item) => item.ten),
-      ...queKep.queNgoai.diachiquengoai.map((item) => item.ten),
-    ];
-    const listthiencan = [
-      ...queKep.queNoi.diachiquenoi.map(
-        (item) => `${queKep.queNoi.thiencanquenoi.ten} ${item.ten}`
-      ),
-      ...queKep.queNgoai.diachiquengoai.map(
-        (item) => `${queKep.queNgoai.thiencanquengoai.ten} ${item.ten}`
-      ),
-    ];
-
-    res.status(200).json({
-      que_chinh: {
-        ten_que: queKep.tenque,
-        ma_que: queKep.mahatext,
-        dien_giai: queKep.dien_giai,
-        luc_than: ketQua,
-        can_chi: listdiachi,
-        thiencan: listthiencan,
-        vong_truong_sinh: listvongtruongsinh,
-        vong_truong_sinh_thang: listvongtruongsinhthang,
-        tu_thoi: listtuthoi.map((item) => item.trangThai),
-        hao_the_ung: [
-          listdiachi[queKep.hao_the - 1],
-          listdiachi[queKep.hao_the - 1],
-        ],
-      },
-      que_bien: queKepBien
-        ? {
-            ten_que: queKepBien.tenque,
-            ma_que: queKepBien.mahatext,
-            dien_giai: queKepBien.dien_giai,
-            luc_than: ketQuaBien,
-            can_chi: listdiachibien,
-            thiencan: listthiencanbien,
-            vong_truong_sinh_ngay: listvongtruongsinhbien,
-            vong_truong_sinh_thang: listvongtruongsinhthangbien,
-            tu_thoi: listtuthoibien.map((item) => item.trangThai),
-          }
-        : null,
-      ngay_lap_que: {
-        ngay: lunarInfo.day,
-        thang: lunarInfo.month,
-        nam: lunarInfo.year,
-        gio: lunarInfo.hour.canChi,
-        tietKhi: lunarInfo.tietKhi,
-        nguyetLenh: lunarInfo.nguyetLenh,
-        nhatThan: lunarInfo.nhatThan,
-      },
-      luc_thu: lucthu?.[0]?.lucThu?.map((item) => item.ten) || [],
-      tuan_khong: tuankhonginfo?.tuankhong || null,
-      the_ung: getElementsWithStep(
-        listdiachi.map((item) => item) || [],
-        queKep.hao_the - 1
-      ),
-      quai_than: getQuaiThan(queKep.hao_the - 1, haos),
+    // Trả về kết quả
+    return res.status(200).json({
+      queKep,
+      queKepBien,
+      listvongtruongsinh,
+      listvongtruongsinhbien,
+      listvongtruongsinhthang,
+      listvongtruongsinhthangbien,
+      lucthu,
+      listtuthoi,
+      listtuthoibien,
+      tuankhonginfo,
+      ketQua,
+      ketQuaBien,
     });
   } catch (error) {
-    console.error("Lỗi tra quẻ kép:", error);
-    res
-      .status(500)
-      .json({ message: "Lỗi khi tra quẻ kép", error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+async function timphucthan(listlucthan, quethuan) {
+  const lucthantong = [
+    "Huynh đệ",
+    "Quan quỷ",
+    "Thê tài",
+    "Phụ mẫu",
+    "Tử tôn"
+  ];
+
+  // 1. Xác định các Lục Thân bị thiếu trong quẻ chính
+  const lucthanthieu = lucthantong.filter(than => !listlucthan.includes(than));
+
+  // 2. Tìm các Lục Thân bị thiếu trong quẻ thuần và lấy cả vị trí + địa chi
+  let phucThanList = [];
+
+  if (quethuan?.diachiquenoi) {
+    for (let i = 0; i < quethuan.diachiquenoi.length; i++) {
+      const diachi = quethuan.diachiquenoi[i];
+      const lt = soSanhNguHanh(quethuan.nguhanh, diachi.nguhanh);
+      if (lucthanthieu.includes(lt)) {
+        phucThanList.push({
+          lucthan: lt,
+          viTri: `Hào Nội ${i + 1}`,
+          diaChi:  `${diachi.ten}-${diachi.nguhanh.ten}`
+
+        });
+      }
+    }
+  }
+
+  if (quethuan?.diachiquengoai) {
+    for (let i = 0; i < quethuan.diachiquengoai.length; i++) {
+      const diachi = quethuan.diachiquengoai[i];
+      const lt = soSanhNguHanh(quethuan.nguhanh, diachi.nguhanh);
+      if (lucthanthieu.includes(lt)) {
+        phucThanList.push({
+          lucthan: lt,
+          viTri: `Hào Ngoại ${i + 1}`,
+          diaChi:  `${diachi.ten}-${diachi.nguhanh.ten}`
+          });
+        }
+    }
+  }
+
+  return phucThanList;
+}
+
 
 async function traVongTruongSinhTheoTamHop(diachi) {
   const tamHopCucMap = [
@@ -371,6 +349,48 @@ async function traVongTruongSinhTheoTamHop(diachi) {
 
   return phase.name;
 }
+async function traTrangThaiTruongSinh(nguhanh, diaChi) {
+  const allChi = [
+    "Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ",
+    "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi",
+  ];
+
+  // Bước 1: Lấy vòng Trường Sinh theo ngũ hành truyền vào
+  const mapping = await ElementPhaseMap.findOne({ hanh: nguhanh });
+  if (!mapping) {
+    console.log(`❌ Không tìm thấy vòng Trường Sinh cho hành ${nguhanh}`);
+    return null;
+  }
+
+  const startChi = mapping.truongSinhChi;
+
+  const startIndex = allChi.indexOf(startChi);
+  const chiIndex = allChi.indexOf(diaChi);
+
+  if (startIndex === -1 || chiIndex === -1) {
+    console.log("❌ Địa chi không hợp lệ.");
+    return null;
+  }
+
+  // Bước 2: Tính vị trí của địa chi trong vòng Trường Sinh
+  const phaseIndex = (chiIndex - startIndex + 12) % 12;
+
+  // Bước 3: Lấy trạng thái
+  const phase = await TruongSinhPhase.findOne({ order: phaseIndex + 1 });
+
+  if (!phase) {
+    console.log("❌ Không tìm thấy giai đoạn Trường Sinh.");
+    return null;
+  }
+
+  return {
+    hanh: nguhanh,
+    truongSinhBatDauTai: startChi,
+    diaChi: diaChi,
+    trangThai: phase.name,
+  };
+}
+
 
 async function traVongTruongSinh(nguhanh, diachi) {
   const allChi = [
@@ -491,6 +511,8 @@ export const createQueKep = async (req, res) => {
       tenque,
       mahatext,
       dien_giai,
+      dac_diem_que,
+      ten_bieu_tuong,
       thuoccung,
       hao_the,
     } = req.body;
@@ -500,6 +522,8 @@ export const createQueKep = async (req, res) => {
       tenque,
       mahatext,
       dien_giai,
+      dac_diem_que,
+      ten_bieu_tuong,
       thuoccung,
       hao_the,
     });
@@ -521,6 +545,8 @@ export const updateQueKep = async (req, res) => {
       "tenque",
       "mahatext",
       "dien_giai",
+      "dac_diem_que",
+      "ten_bieu_tuong",
       "thuoccung",
       "hao_the",
     ];

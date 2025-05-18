@@ -209,6 +209,12 @@ router.get("/que-kep", getQueKep);
  *               hao_the:
  *                 type: number
  *                 example: 6
+ *               dac_diem_que:
+ *                 type: string
+ *                 example: "Đặc điểm của quẻ kép"
+ *               ten_bieu_tuong:
+ *                 type: string
+ *                 example: "Biểu tượng của quẻ kép"
  *               tenque:
  *                 type: string
  *                 example: "Tên quẻ kép"
@@ -236,6 +242,10 @@ router.get("/que-kep", getQueKep);
  *                   type: string
  *                 hao_the:
  *                   type: number
+ *                 dac_diem_que:
+ *                   type: string
+ *                 ten_bieu_tuong:
+ *                   type: string
  *                 tenque:
  *                   type: string
  *                 mahatext:
@@ -284,6 +294,12 @@ router.post("/que-kep", createQueKep);
  *               hao_the:
  *                 type: number
  *                 example: 6
+ *               dac_diem_que:
+ *                 type: string
+ *                 example: "Đặc điểm của quẻ kép"
+ *               ten_bieu_tuong:
+ *                 type: string
+ *                 example: "Biểu tượng của quẻ kép"
  *               tenque:
  *                 type: string
  *                 description: Tên của Quẻ Kép
@@ -323,6 +339,12 @@ router.post("/que-kep", createQueKep);
  *                 hao_the:
  *                   type: number
  *                   example: 6
+ *                 dac_diem_que:
+ *                   type: string
+ *                   example: "Đặc điểm của quẻ kép"
+ *                 ten_bieu_tuong:
+ *                   type: string
+ *                   example: "Biểu tượng của quẻ kép"
  *                 tenque:
  *                   type: string
  *                   description: Tên của Quẻ Kép
