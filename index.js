@@ -2,15 +2,20 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import express from "express";
 import connectDB from "./lib/db.js";
+import authRoutes from "./routes/authRoutes.js";
+import firebaseRoutes from "./routes/firebaseRoutes.js";
 import queRoutes from "./routes/queRoutes.js";
 import { swaggerServe, swaggerSetup } from "./swagger/swagger.js";
+import { responseHandler } from "./utils/responseHandler.js";
 dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 connectDB();
+app.use(responseHandler);
 app.use("/api-docs", swaggerServe, swaggerSetup);
-app.use("/api", queRoutes);
-
+app.use("/api/auth", authRoutes);
+app.use("/api/que", queRoutes);
+app.use("/api/firebase", firebaseRoutes);
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server chạy tại http://localhost:${PORT}`);

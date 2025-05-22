@@ -23,7 +23,7 @@ export const traQueKep = async (req, res) => {
 
     // Kiểm tra số lượng hào có đúng 6 hay không
     if (!Array.isArray(haos) || haos.length !== 6) {
-      return res.status(400).json({ message: "Phải nhập đúng 6 hào" });
+      return res.error("Phải nhập đúng 6 hào", 400, 400);
     }
 
     // Chuyển ngày dương sang thông tin âm lịch
@@ -58,9 +58,7 @@ export const traQueKep = async (req, res) => {
 
     // Nếu không tìm thấy quẻ đơn thì trả về lỗi
     if (!queNgoai || !queNoi) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy Quẻ Đơn phù hợp" });
+      return res.error("Không tìm thấy Quẻ Đơn phù hợp", 404, 404);
     }
 
     // Tìm quẻ kép theo quẻ nội và quẻ ngoại
@@ -81,9 +79,7 @@ export const traQueKep = async (req, res) => {
     });
 
     if (!queKep) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy Quẻ Kép phù hợp" });
+      return res.error("Không tìm thấy Quẻ Kép phù hợp", 404, 404);
     }
 
     // Khởi tạo các biến lưu kết quả
@@ -267,158 +263,155 @@ export const traQueKep = async (req, res) => {
     //   ketQua,
     //   ketQuaBien,
     // });
-    console.log(ketQua, queKep.hao_the);
+    // console.log(ketQua, queKep.hao_the);
     const listphucthan = await timphucthan(ketQua, queKep.thuoccung);
     const listtheung = timtheung(ketQua, queKep.hao_the);
     const listquaithan = getQuaiThan(queKep.hao_the, haos);
 
-    return res.status(200).json({
-      message: "success",
-      data: {
-        queKep: {
-          ten: queKep?.tenque ?? null,
-          mahatext: queKep?.mahatext ?? null,
-          queNoi: {
-            thiencanquenoi:
-              queKep?.queNoi?.diachiquenoi?.map(
-                (item) =>
-                  `${queKep?.queNoi?.thiencanquenoi?.ten ?? ""} ${
-                    item?.ten ?? ""
-                  }`
-              ) ?? [],
-            diachiquenoi:
-              queKep?.queNoi?.diachiquenoi?.map(
-                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
-              ) ?? [],
-            lucthan: ketQua?.slice(0, 3) ?? [],
-            tuthoi:
-              listtuthoi?.slice(0, 3)?.map((item) => item?.trangThai ?? null) ??
-              [],
-            truongsinh:
-              listvongtruongsinh
-                ?.slice(0, 3)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinhthang:
-              listvongtruongsinhthang
-                ?.slice(0, 3)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            lucthu:
-              lucthu?.[0]?.lucThu
-                ?.slice(0, 3)
-                ?.map((item) => item?.ten ?? null) ?? [],
-          },
-          queNgoai: {
-            thiencanquengoai:
-              queKep?.queNgoai?.diachiquengoai?.map(
-                (item) =>
-                  `${queKep?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
-                    item?.ten ?? ""
-                  }`
-              ) ?? [],
-            diachiquengoai:
-              queKep?.queNgoai?.diachiquengoai?.map(
-                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
-              ) ?? [],
-            lucthan: ketQua?.slice(3, 6) ?? [],
-            tuthoi:
-              listtuthoi?.slice(3, 6)?.map((item) => item?.trangThai ?? null) ??
-              [],
-            truongsinh:
-              listvongtruongsinh
-                ?.slice(3, 6)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinhthang:
-              listvongtruongsinhthang
-                ?.slice(3, 6)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            lucthu:
-              lucthu?.[0]?.lucThu
-                ?.slice(3, 6)
-                ?.map((item) => item?.ten ?? null) ?? [],
-          },
-          thuoccung: queKep?.thuoccung?.ten ?? null,
-          hao_the: queKep?.hao_the ?? null,
-          dien_giai: queKep?.dien_giai ?? null,
-          dac_diem_que: queKep?.dac_diem_que ?? null,
-          ten_bieu_tuong: queKep?.ten_bieu_tuong ?? null,
-          phucthan: listphucthan ?? [],
-          theung: listtheung ?? [],
-          quaithan: listquaithan ?? [],
+    return res.success({
+      queKep: {
+        ten: queKep?.tenque ?? null,
+        mahatext: queKep?.mahatext ?? null,
+        queNoi: {
+          thiencanquenoi:
+            queKep?.queNoi?.diachiquenoi?.map(
+              (item) =>
+                `${queKep?.queNoi?.thiencanquenoi?.ten ?? ""} ${
+                  item?.ten ?? ""
+                }`
+            ) ?? [],
+          diachiquenoi:
+            queKep?.queNoi?.diachiquenoi?.map(
+              (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+            ) ?? [],
+          lucthan: ketQua?.slice(0, 3) ?? [],
+          tuthoi:
+            listtuthoi?.slice(0, 3)?.map((item) => item?.trangThai ?? null) ??
+            [],
+          truongsinh:
+            listvongtruongsinh
+              ?.slice(0, 3)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinhthang:
+            listvongtruongsinhthang
+              ?.slice(0, 3)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          lucthu:
+            lucthu?.[0]?.lucThu
+              ?.slice(0, 3)
+              ?.map((item) => item?.ten ?? null) ?? [],
         },
-        queBien: {
-          ten: queKepBien?.tenque ?? null,
-          mahatext: queKepBien?.mahatext ?? null,
-          queNoi: {
-            thiencanquenoi:
-              queKepBien?.queNoi?.diachiquenoi?.map(
-                (item) =>
-                  `${queKepBien?.queNoi?.thiencanquenoi?.ten ?? ""} ${
-                    item?.ten ?? ""
-                  }`
-              ) ?? [],
-            diachiquenoi:
-              queKepBien?.queNoi?.diachiquenoi?.map(
-                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
-              ) ?? [],
-            lucthan: ketQuaBien?.slice(0, 3) ?? [],
-            tuthoi:
-              listtuthoibien
-                ?.slice(0, 3)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinh:
-              listvongtruongsinhbien
-                ?.slice(0, 3)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinhthang:
-              listvongtruongsinhthangbien
-                ?.slice(0, 3)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            lucthu:
-              lucthu?.[0]?.lucThu
-                ?.slice(0, 3)
-                ?.map((item) => item?.ten ?? null) ?? [],
-          },
-          queNgoai: {
-            thiencanquengoai:
-              queKepBien?.queNgoai?.diachiquengoai?.map(
-                (item) =>
-                  `${queKepBien?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
-                    item?.ten ?? ""
-                  }`
-              ) ?? [],
-            diachiquengoai:
-              queKepBien?.queNgoai?.diachiquengoai?.map(
-                (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
-              ) ?? [],
-            lucthan: ketQuaBien?.slice(3, 6) ?? [],
-            tuthoi:
-              listtuthoibien
-                ?.slice(3, 6)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinh:
-              listvongtruongsinhbien
-                ?.slice(3, 6)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            truongsinhthang:
-              listvongtruongsinhthangbien
-                ?.slice(3, 6)
-                ?.map((item) => item?.trangThai ?? null) ?? [],
-            lucthu:
-              lucthu?.[0]?.lucThu
-                ?.slice(3, 6)
-                ?.map((item) => item?.ten ?? null) ?? [],
-          },
-          dien_giai: queKepBien?.dien_giai ?? null,
-          dac_diem_que: queKepBien?.dac_diem_que ?? null,
-          ten_bieu_tuong: queKepBien?.ten_bieu_tuong ?? null,
+        queNgoai: {
+          thiencanquengoai:
+            queKep?.queNgoai?.diachiquengoai?.map(
+              (item) =>
+                `${queKep?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
+                  item?.ten ?? ""
+                }`
+            ) ?? [],
+          diachiquengoai:
+            queKep?.queNgoai?.diachiquengoai?.map(
+              (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+            ) ?? [],
+          lucthan: ketQua?.slice(3, 6) ?? [],
+          tuthoi:
+            listtuthoi?.slice(3, 6)?.map((item) => item?.trangThai ?? null) ??
+            [],
+          truongsinh:
+            listvongtruongsinh
+              ?.slice(3, 6)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinhthang:
+            listvongtruongsinhthang
+              ?.slice(3, 6)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          lucthu:
+            lucthu?.[0]?.lucThu
+              ?.slice(3, 6)
+              ?.map((item) => item?.ten ?? null) ?? [],
         },
-        tuankhong: tuankhonginfo?.tuankhong ?? null,
-        ngaylapque: lunarInfo ?? null,
+        thuoccung: queKep?.thuoccung?.ten ?? null,
+        hao_the: queKep?.hao_the ?? null,
+        dien_giai: queKep?.dien_giai ?? null,
+        dac_diem_que: queKep?.dac_diem_que ?? null,
+        ten_bieu_tuong: queKep?.ten_bieu_tuong ?? null,
+        phucthan: listphucthan ?? [],
+        theung: listtheung ?? [],
+        quaithan: listquaithan ?? [],
       },
+      queBien: {
+        ten: queKepBien?.tenque ?? null,
+        mahatext: queKepBien?.mahatext ?? null,
+        queNoi: {
+          thiencanquenoi:
+            queKepBien?.queNoi?.diachiquenoi?.map(
+              (item) =>
+                `${queKepBien?.queNoi?.thiencanquenoi?.ten ?? ""} ${
+                  item?.ten ?? ""
+                }`
+            ) ?? [],
+          diachiquenoi:
+            queKepBien?.queNoi?.diachiquenoi?.map(
+              (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+            ) ?? [],
+          lucthan: ketQuaBien?.slice(0, 3) ?? [],
+          tuthoi:
+            listtuthoibien
+              ?.slice(0, 3)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinh:
+            listvongtruongsinhbien
+              ?.slice(0, 3)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinhthang:
+            listvongtruongsinhthangbien
+              ?.slice(0, 3)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          lucthu:
+            lucthu?.[0]?.lucThu
+              ?.slice(0, 3)
+              ?.map((item) => item?.ten ?? null) ?? [],
+        },
+        queNgoai: {
+          thiencanquengoai:
+            queKepBien?.queNgoai?.diachiquengoai?.map(
+              (item) =>
+                `${queKepBien?.queNgoai?.thiencanquengoai?.ten ?? ""} ${
+                  item?.ten ?? ""
+                }`
+            ) ?? [],
+          diachiquengoai:
+            queKepBien?.queNgoai?.diachiquengoai?.map(
+              (item) => `${item?.ten ?? ""}-${item?.nguhanh?.ten ?? ""}`
+            ) ?? [],
+          lucthan: ketQuaBien?.slice(3, 6) ?? [],
+          tuthoi:
+            listtuthoibien
+              ?.slice(3, 6)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinh:
+            listvongtruongsinhbien
+              ?.slice(3, 6)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          truongsinhthang:
+            listvongtruongsinhthangbien
+              ?.slice(3, 6)
+              ?.map((item) => item?.trangThai ?? null) ?? [],
+          lucthu:
+            lucthu?.[0]?.lucThu
+              ?.slice(3, 6)
+              ?.map((item) => item?.ten ?? null) ?? [],
+        },
+        dien_giai: queKepBien?.dien_giai ?? null,
+        dac_diem_que: queKepBien?.dac_diem_que ?? null,
+        ten_bieu_tuong: queKepBien?.ten_bieu_tuong ?? null,
+      },
+      tuankhong: tuankhonginfo?.tuankhong ?? null,
+      ngaylapque: lunarInfo ?? null,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Lỗi server" });
+    return res.error("Lỗi server", 500, 500);
   }
 };
 
@@ -665,9 +658,9 @@ function soSanhNguHanh(nguhanhquetong, nguhanhdiachi) {
 export const getQueDon = async (req, res) => {
   try {
     const list = await QueDon.find().select("tenque mahatext");
-    res.status(200).json(list);
+    return res.success(list);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách quẻ đơn", error });
+    return res.error("Lỗi khi lấy danh sách quẻ đơn", 500, 500);
   }
 };
 
@@ -682,9 +675,9 @@ export const getQueKep = async (req, res) => {
         { path: "nguhanh", select: "ten sinh khac" },
       ],
     });
-    res.status(200).json(list);
+    return res.success(list);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách quẻ kép", error });
+    return res.error("Lỗi khi lấy danh sách quẻ kép", 500, 500);
   }
 };
 
@@ -715,9 +708,9 @@ export const createQueKep = async (req, res) => {
     });
 
     const savedQueKep = await newQueKep.save();
-    res.status(201).json(savedQueKep);
+    return res.success(savedQueKep);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi thêm quẻ kép", error });
+    return res.error("Lỗi khi thêm quẻ kép", 500, 500);
   }
 };
 export const updateQueKep = async (req, res) => {
@@ -750,12 +743,12 @@ export const updateQueKep = async (req, res) => {
     });
 
     if (!updatedQueKep) {
-      return res.status(404).json({ message: "Quẻ Kép không tồn tại" });
+      return res.error("Quẻ Kép không tồn tại", 404, 404);
     }
 
-    res.status(200).json(updatedQueKep);
+    return res.success(updatedQueKep);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi cập nhật quẻ kép", error });
+    return res.error("Lỗi khi cập nhật quẻ kép", 500, 500);
   }
 };
 
@@ -766,19 +759,19 @@ export const getThienCan = async (req, res) => {
       path: "lucThu",
       select: "-_id ten",
     });
-    res.status(200).json({ list, listLucThu });
+    return res.success({ list, listLucThu });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Lỗi khi lấy danh sách thiên can", error });
+    return res.error("Lỗi khi lấy danh sách thiên can", 500, 500);
   }
 };
 
 export const getDiaChi = async (req, res) => {
   try {
     const list = await DiaChi.find();
-    res.status(200).json(list);
+    return res.success(list);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách địa chi", error });
+    return res.error("Lỗi khi lấy danh sách địa chi", 500, 500);
   }
 };
 export async function updateQueDon(req, res) {
@@ -793,9 +786,7 @@ export async function updateQueDon(req, res) {
       !Array.isArray(diachiquenoi) ||
       !Array.isArray(diachiquengoai)
     ) {
-      return res
-        .status(400)
-        .json({ message: "Thiếu hoặc sai định dạng dữ liệu." });
+      return res.error("Thiếu hoặc sai định dạng dữ liệu.", 400, 400);
     }
 
     // Cập nhật quẻ đơn
@@ -811,13 +802,13 @@ export async function updateQueDon(req, res) {
     ).populate("thiencanquenoi thiencanquengoai diachiquenoi diachiquengoai");
 
     if (!updated) {
-      return res.status(404).json({ message: "Không tìm thấy quẻ đơn." });
+      return res.error("Không tìm thấy quẻ đơn.", 404, 404);
     }
 
-    res.json({ message: "✅ Đã cập nhật quẻ đơn", que: updated });
+    return res.success({ message: "✅ Đã cập nhật quẻ đơn", que: updated });
   } catch (err) {
     console.error("❌ Error:", err);
-    res.status(500).json({ message: "Lỗi máy chủ" });
+    return res.error("Lỗi máy chủ", 500, 500);
   }
 }
 export async function traQue(req, res) {
@@ -825,7 +816,7 @@ export async function traQue(req, res) {
     const { hao } = req.body;
 
     if (!Array.isArray(hao) || hao.length !== 6) {
-      return res.status(400).json({ error: "Phải nhập đúng 6 hào" });
+      return res.error("Phải nhập đúng 6 hào", 400, 400);
     }
 
     const goc = hao.map((h) => h.am_duong);
@@ -849,7 +840,7 @@ export async function traQue(req, res) {
 
     await LichSu.create({ hao, ma_que, ma_que_bien });
 
-    res.json({
+    return res.success({
       ma_que,
       ten_que: queGoc ? queGoc.ten_que : "Không tìm thấy",
       ma_que_bien: ma_que_bien,
@@ -857,16 +848,16 @@ export async function traQue(req, res) {
     });
   } catch (error) {
     console.error("❌ Lỗi xử lý traQue:", error);
-    res.status(500).json({ error: "Lỗi server" });
+    return res.error("Lỗi server", 500, 500);
   }
 }
 
 export async function lichSu(req, res) {
   try {
     const lichSuList = await LichSu.find().sort({ createdAt: -1 }).limit(20);
-    res.json(lichSuList);
+    return res.success(lichSuList);
   } catch (error) {
     console.error("❌ Lỗi lấy lịch sử:", error);
-    res.status(500).json({ error: "Lỗi server" });
+    return res.error("Lỗi server", 500, 500);
   }
 }

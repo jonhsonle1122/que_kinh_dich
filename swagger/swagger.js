@@ -8,6 +8,16 @@ const options = {
       title: "API Tra Cứu Quẻ Kinh Dịch",
       version: "1.0.0",
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }],
   },
   apis: ["./routes/*.js"], // chỉ định nơi Swagger tìm mô tả API
 };

@@ -11,7 +11,9 @@ import {
   updateQueDon,
   updateQueKep,
 } from "../controllers/queController.js";
+import { protectRoute } from "../middleware/protectRoute.js";
 const router = Router();
+router.use(protectRoute);
 
 /**
  * @swagger
@@ -53,11 +55,13 @@ const router = Router();
  */
 /**
  * @swagger
- * /api/tra:
+ * /api/que/tra:
  *   post:
  *     summary: Tra cứu Quẻ Kép từ 6 hào và danh sách hào động (để tra Quẻ Biến)
  *     tags:
  *       - Quẻ Kép
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -127,9 +131,11 @@ const router = Router();
 router.post("/tra", traQueKep);
 /**
  * @swagger
- * /api/que-don:
+ * /api/que/que-don:
  *   get:
  *     summary: Lấy danh sách Quẻ Đơn
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Danh sách quẻ đơn
@@ -163,9 +169,11 @@ router.get("/que-don", getQueDon);
 
 /**
  * @swagger
- * /api/que-kep:
+ * /api/que/que-kep:
  *   get:
  *     summary: Lấy danh sách Quẻ Kép
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Danh sách quẻ kép
@@ -187,9 +195,11 @@ router.get("/que-kep", getQueKep);
 
 /**
  * @swagger
- * /api/que-kep:
+ * /api/que/que-kep:
  *   post:
  *     summary: Thêm Quẻ Kép
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -260,9 +270,11 @@ router.post("/que-kep", createQueKep);
 // API Update Quẻ Kép
 /**
  * @swagger
- * /api/que-kep/{id}:
+ * /api/que/que-kep/{id}:
  *   put:
  *     summary: Cập nhật thông tin Quẻ Kép
+ *     security:
+ *       - bearerAuth: []
  *     description: API này cho phép cập nhật thông tin của một Quẻ Kép dựa trên ID.
  *     parameters:
  *       - name: id
@@ -367,9 +379,11 @@ router.post("/que-kep", createQueKep);
 router.put("/que-kep/:id", updateQueKep);
 /**
  * @swagger
- * /api/thien-can:
+ * /api/que/thien-can:
  *   get:
  *     summary: Lấy danh sách Thiên Can
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Danh sách thiên can
@@ -391,9 +405,11 @@ router.get("/thien-can", getThienCan);
 
 /**
  * @swagger
- * /api/dia-chi:
+ * /api/que/dia-chi:
  *   get:
  *     summary: Lấy danh sách Địa Chi
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Danh sách địa chi
@@ -414,9 +430,11 @@ router.get("/thien-can", getThienCan);
 router.get("/dia-chi", getDiaChi);
 /**
  * @swagger
- * /api/tra-que:
+ * /api/que/tra-que:
  *   post:
  *     summary: Tra cứu quẻ từ 6 hào âm dương
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -438,7 +456,7 @@ router.get("/dia-chi", getDiaChi);
 router.post("/tra-que", traQue);
 /**
  * @swagger
- * /api/lich-su:
+ * /api/que/lich-su:
  *   get:
  *     summary: Lấy lịch sử tra quẻ
  *     responses:
@@ -449,9 +467,11 @@ router.get("/lich-su", lichSu);
 
 /**
  * @swagger
- * /api/{id}:
+ * /api/que/{id}:
  *   put:
  *     summary: Cập nhật thiên can và địa chi cho một quẻ đơn
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
